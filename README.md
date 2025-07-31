@@ -109,6 +109,34 @@ for i, embedding := range embedResp.Data {
 }
 ```
 
+### 4a. Creating embeddings via langchaingo (langchain-go)
+
+```go
+import (
+    "context"
+    "fmt"
+    "github.com/ValerySidorin/gigago/client"
+    "github.com/ValerySidorin/gigago/model"
+    "github.com/tmc/langchaingo/embeddings"
+)
+
+func main() {
+    gigaClient := client.NewClient("your_auth_key")
+    llm := model.New(gigaClient, "Embeddings")
+    embedder := embeddings.NewEmbedder(llm)
+    ctx := context.Background()
+
+    texts := []string{"Hello, world!", "GigaChat is awesome!"}
+    vectors, err := embedder.EmbedDocuments(ctx, texts)
+    if err != nil {
+        panic(err)
+    }
+    for i, vec := range vectors {
+        fmt.Printf("Embedding %d: %d dimensions\n", i+1, len(vec))
+    }
+}
+```
+
 ### 5. Function calling
 
 ```go

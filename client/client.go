@@ -30,6 +30,15 @@ const (
 	General Purpose = "general"
 )
 
+type Role string
+
+const (
+	RoleSystem    Role = "system"
+	RoleUser      Role = "user"
+	RoleAssistant Role = "assistant"
+	RoleFunction  Role = "function"
+)
+
 // Client представляет клиент для работы с GigaChat API
 type Client struct {
 	httpClient    *http.Client
@@ -77,7 +86,7 @@ type ModelsResponse struct {
 
 // Message представляет сообщение в чате
 type Message struct {
-	Role    string `json:"role"`
+	Role    Role   `json:"role"`
 	Content string `json:"content"`
 }
 
@@ -96,7 +105,7 @@ type FunctionCall struct {
 
 // ChatMessage представляет сообщение в чате с возможными функциями
 type ChatMessage struct {
-	Role         string        `json:"role"`
+	Role         Role          `json:"role"`
 	Content      string        `json:"content,omitempty"`
 	FunctionCall *FunctionCall `json:"function_call,omitempty"`
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/ValerySidorin/gigago/client"
+	"github.com/tmc/langchaingo/embeddings"
 	"github.com/tmc/langchaingo/llms"
 )
 
@@ -19,6 +20,7 @@ type LLM struct {
 }
 
 var _ llms.Model = (*LLM)(nil)
+var _ embeddings.EmbedderClient = (*LLM)(nil)
 
 func New(gigaClient *client.Client, model string) *LLM {
 	return &LLM{
@@ -79,14 +81,18 @@ func (o *LLM) GenerateContent(
 			}
 		}
 
-		var role string
+		var role client.Role
 		switch msg.Role {
-		case llms.ChatMessageTypeAI:
-			role = RoleAssistant
+		case llms.ChatMessageTypeSystem:
+			role = client.RoleSystem
 		case llms.ChatMessageTypeHuman, llms.ChatMessageTypeGeneric:
-			role = RoleUser
+			role = client.RoleUser
+		case llms.ChatMessageTypeAI:
+			role = client.RoleAssistant
+		case llms.ChatMessageTypeFunction:
+			role = client.RoleFunction
 		default:
-			role = string(msg.Role)
+			return nil, fmt.Errorf("role %v not supported", msg.Role)
 		}
 
 		chatMessages[i] = client.ChatMessage{
@@ -131,4 +137,25 @@ func (o *LLM) GenerateContent(
 			},
 		},
 	}, nil
+}
+
+func (o *LLM) CreateEmbedding(ctx context.Context, texts []string) ([][]float32, error) {
+	req := &client.EmbeddingRequest{
+		Model: o.model,
+		Input: texts,
+	}
+	resp, err := o.gigaClient.CreateEmbeddings(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([][]float32, len(resp.Data))
+	for i, emb := range resp.Data {
+		vec := make([]float32, len(emb.Embedding))
+		for j, v := range emb.Embedding {
+			vec[j] = float32(v)
+		}
+		result[i] = vec
+	}
+	return result, nil
 }

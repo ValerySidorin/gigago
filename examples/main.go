@@ -11,6 +11,7 @@ import (
 
 	"github.com/ValerySidorin/gigago/client"
 	"github.com/ValerySidorin/gigago/model"
+	"github.com/tmc/langchaingo/embeddings"
 )
 
 func main() {
@@ -52,7 +53,7 @@ func main() {
 		Messages: []client.ChatMessage{
 			{
 				Role:    "user",
-				Content: "Привет! Расскажи коротко о Go языке программирования.",
+				Content: "Hello, how are you?",
 			},
 		},
 	}
@@ -70,7 +71,7 @@ func main() {
 	fmt.Println("\n3. Create embeddings:")
 	embedReq := &client.EmbeddingRequest{
 		Model: "Embeddings",
-		Input: []string{"Go", "Golang", "Программирование"},
+		Input: []string{"Go", "Golang", "Programming"},
 	}
 
 	embedResp, err := gigaClient.CreateEmbeddings(ctx, embedReq)
@@ -86,13 +87,13 @@ func main() {
 	fmt.Println("\n4. Chat with functions:")
 	function := client.Function{
 		Name:        "get_weather",
-		Description: "Get weather",
+		Description: "Get the weather in a specified city",
 		Parameters: map[string]interface{}{
 			"type": "object",
 			"properties": map[string]interface{}{
 				"city": map[string]interface{}{
 					"type":        "string",
-					"description": "City",
+					"description": "City name",
 				},
 			},
 			"required": []string{"city"},
@@ -103,8 +104,8 @@ func main() {
 		Model: "GigaChat:latest",
 		Messages: []client.ChatMessage{
 			{
-				Role:    "user",
-				Content: "Какая погода в Москве?",
+				Role:    client.RoleUser,
+				Content: "What's the weather in Moscow?",
 			},
 		},
 		Functions: []client.Function{function},
@@ -159,11 +160,26 @@ func main() {
 	fmt.Println("\n6. Usage with langchaingo:")
 	llm := model.New(gigaClient, "GigaChat:latest")
 
-	response, err := llm.Call(ctx, "Что такое GigaChat?")
+	response, err := llm.Call(ctx, "Hello! How are you?")
 	if err != nil {
 		log.Printf("Langchaingo error: %v", err)
 	} else {
 		fmt.Printf("Langchaingo response: %s\n", response)
+	}
+
+	embeddingsLLM := model.New(gigaClient, "Embeddings")
+	embedder, err := embeddings.NewEmbedder(embeddingsLLM)
+	if err != nil {
+		log.Fatalf("Error creating Langchaingo embedder: %v", err)
+	}
+
+	texts := []string{"Hello, world!", "GigaChat is awesome!"}
+	vectors, err := embedder.EmbedDocuments(ctx, texts)
+	if err != nil {
+		log.Printf("Error creating embeddings: %v", err)
+	}
+	for i, vec := range vectors {
+		fmt.Printf("Embedding %d: %d dimensions\n", i+1, len(vec))
 	}
 
 	fmt.Println("\n=== Example finished ===")
